@@ -48,7 +48,7 @@ Build cuda_12.6.r12.6/compiler.34431801_0
 
 
 ## Troubleshooting
-- Ensure `CUDA_PATH_V12_6` is configured in your system `Environment Variables.`
+- Ensure `CUDA_PATH_V12_6` is configured in your system `Environment Variables`.
 
 
 ## License
