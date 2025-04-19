@@ -4,19 +4,24 @@ import cv2
 import matplotlib.pyplot as plt
 
 class Preprocessor:
-    def __init__(self, 
-        clip_limit: float = 2.0,
-        clahe_tile_grid_size: tuple = (8, 8),
-        gauss_std_radius: int = 1,
-        deblur_weight_mask: float = 0.5,
-        laplacian_kernel: ImageFilter.Kernel = None
+    def __init__(
+        self, 
+        gray_thresh: int = 25, # Surpress background pixels via grayscale threshold [0-255]
+        clip_limit: float = 2.0, # limits constrast amplication [0-3 best for medical images]
+        clahe_tile_grid_size: tuple = (8, 8), # CLAHE tile grid size
+        gauss_std_radius: int = 1, # Gaussian blur size
+        deblur_strength: float = 0.5, # Deblur strength [0.5 is standard]
+        laplacian_ksize: int = 3, # Laplacian kernel size
+        edge_sharpen_strength: float = 0.5 # Laplacian edge sharpening strength [0.5 is standard]
     ):
         # Adjustable image filter parameters
+        self.gray_thresh = gray_thresh;
         self.clip_limit = clip_limit;
         self.clahe_tile_grid_size = clahe_tile_grid_size;
         self.gauss_std_radius = gauss_std_radius;
-        self.deblur_weight_mask = deblur_weight_mask;
-        self.laplacian_kernel = laplacian_kernel;
+        self.deblur_strength = deblur_strength;
+        self.laplacian_ksize = laplacian_ksize;
+        self.edge_sharpen_strength = edge_sharpen_strength;
 
         self.visualization_steps = []; # Debug steps
 
@@ -43,7 +48,7 @@ class Preprocessor:
         self.__college_np_image(np.array(img), "Original Image");
 
         # Convery to NumPy BGR format for OpenCV
-        img_np = np.array(img.convert("RGB"))[:, :, ::-1]  # RGB -> BGR
+        img_np = np.array(img.convert("RGB"))[:, :, ::-1];  # RGB -> BGR
 
         # Step 1: min-max normalization
         img_np = img_np.astype(np.float32);
@@ -55,8 +60,12 @@ class Preprocessor:
         self.__college_np_image(img_np[:, :, ::-1], "Step 1: min-max normalized");
 
         # Create grayscale mask to suppress background
-        gray = cv2.cvtColor(img_np, cv2.COLOR_BGR2GRAY)
-        _, mask = cv2.threshold(gray, 10, 255, cv2.THRESH_BINARY)
+        gray = cv2.cvtColor(img_np, cv2.COLOR_BGR2GRAY);
+        _, mask = cv2.threshold(gray, self.gray_thresh, 255, cv2.THRESH_BINARY);
+
+        # Remove small specks
+        kernel = np.ones((3, 3), np.uint8);
+        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel);
 
         # Step 2: CLAHE with background masking
         clahe = cv2.createCLAHE(clipLimit=self.clip_limit, tileGridSize=self.clahe_tile_grid_size);
@@ -79,29 +88,22 @@ class Preprocessor:
         # Step 4: Deblur (Unsharp Mask)
         img_np = np.array(img).astype(np.float32);
         blurred_np = np.array(blurred).astype(np.float32);
-        deblurred_np = img_np + self.deblur_weight_mask * (img_np - blurred_np);
+        deblurred_np = img_np + self.deblur_strength * (img_np - blurred_np);
         deblurred_np = np.clip(deblurred_np, 0, 255);
-        self.__college_np_image(deblurred_np, "Step 4: Deblurred Image");
+        self.__college_np_image(deblurred_np, "Step 4: Deblurred (Sharpened)");
 
-        # Step 5: Laplacian Filter
-        laplacian_kernel = self.laplacian_kernel;
-
-        # Convert to 8 bit (0-255) & apply laplacian filter
-        laplacian_img = Image.fromarray(deblurred_np.astype(np.uint8)).filter(laplacian_kernel);
-        laplacian_np = np.array(laplacian_img).astype(np.float32);
-
-        # Prevent negative values
-        laplacian_np = np.abs(laplacian_np);
-        laplacian_np -= laplacian_np.min();
-
-        # Normalize to [0-255]
-        if laplacian_np.max() != 0:
-            laplacian_np = laplacian_np / laplacian_np.max() * 255.0;
-        laplacian_np = np.clip(laplacian_np, 0, 255);
-        self.__college_np_image(laplacian_np, "Step 5: Laplacian Output");
+        # Step 5: Laplacian filter (edge detection)
+        lap_cv = cv2.Laplacian(deblurred_np.astype(np.uint8), ddepth=cv2.CV_64F, ksize=self.laplacian_ksize);
+        lap_cv = np.abs(lap_cv);
+        lap_cv -= lap_cv.min();
+        if lap_cv.max() != 0:
+            lap_cv = (lap_cv / lap_cv.max()) * 255.0;
+        
+        lap_cv = np.clip(lap_cv, 0, 255);
+        self.__college_np_image(lap_cv, "Step 5: Laplacian (Edge Detect)");
 
         # Step 6: Combine Laplacian with Deblurred Image
-        enhanced_np = deblurred_np + 0.5 * laplacian_np;
+        enhanced_np = deblurred_np + self.edge_sharpen_strength * lap_cv;
         enhanced_np = np.clip(enhanced_np, 0, 255);
         self.__college_np_image(enhanced_np, "Step 6: Final Enhanced");
 

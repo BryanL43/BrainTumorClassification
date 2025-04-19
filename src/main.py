@@ -2,6 +2,7 @@ from PIL import Image, ImageFilter
 import numpy as np
 import torch
 from torchvision import transforms
+import torchvision.transforms.functional as F
 import matplotlib.pyplot as plt
 import os
 import random
@@ -29,6 +30,30 @@ def get_random_image_path(root_dir="./DataSet/Training"):
     # Full image path
     return os.path.join(type_path, selected_image), selected_type;
 
+def apply_randomness(img, scale=(0.7, 1.3), size=(224, 224), rotation_degrees=15):
+    original_w, original_h = img.size;
+    zoom_scale = random.uniform(scale[0], scale[1]);
+    
+    # Compute new padded size
+    pad_w = int(original_w * zoom_scale);
+    pad_h = int(original_h * zoom_scale);
+    
+    # Center pad
+    pad_left = (pad_w - original_w) // 2;
+    pad_top = (pad_h - original_h) // 2;
+    img_padded = F.pad(img, padding=[pad_left, pad_top, pad_left, pad_top], fill=0);
+
+    # Crop from padded image
+    i, j, h, w = transforms.RandomResizedCrop.get_params(img_padded, scale=(1.0, 1.0), ratio=(1.0, 1.0));
+    cropped = F.resized_crop(img_padded, i, j, h, w, size=size, interpolation=F.InterpolationMode.BILINEAR);
+
+    # Apply rotation
+    angle = random.uniform(-rotation_degrees, rotation_degrees);
+    rotated = F.rotate(cropped, angle=angle, interpolation=F.InterpolationMode.BILINEAR);
+    
+    print(f"Zoomed out to {zoom_scale:.2f}x with padding");
+    return rotated;
+
 # Denormalize the image for final output [TEMP]
 def denormalize(tensor):
     mean = torch.tensor([0.485, 0.456, 0.406]).view(3, 1, 1);
@@ -37,39 +62,41 @@ def denormalize(tensor):
 
 def main():
     # Instantiate Preprocessor with specified parameters
-    laplacian_kernel = ImageFilter.Kernel(
-        size=(3, 3),
-        kernel=[0, 1, 0,
-                1, -4, 1,
-                0, 1, 0],
-        scale=None,
-        offset=0
-    );
     preprocessor = Preprocessor(
         clip_limit=1.0,
         gauss_std_radius=1,
-        laplacian_kernel=laplacian_kernel
+        laplacian_ksize=7
     );
 
     # Image processing pipeline
+    # transform_pipeline = transforms.Compose([
+    #     preprocessor,
+    #     transforms.Resize((224, 224)),
+    #     transforms.ToTensor(),
+    #     transforms.Normalize(
+    #         mean=[0.485, 0.456, 0.406],  # ImageNet mean
+    #         std=[0.229, 0.224, 0.225]    # ImageNet std
+    #     )
+    # ]);
     transform_pipeline = transforms.Compose([
+        lambda img: apply_randomness(img, size=(224, 224), scale=(0.7, 1.3), rotation_degrees=15),
         preprocessor,
-        transforms.Resize((224, 224)),
         transforms.ToTensor(),
         transforms.Normalize(
-            mean=[0.485, 0.456, 0.406],  # ImageNet mean
-            std=[0.229, 0.224, 0.225]    # ImageNet std
+            mean=[0.485, 0.456, 0.406], # ImageNet mean
+            std=[0.229, 0.224, 0.225]   # ImageNet std
         )
-    ]);
+    ])
 
     # img_path = "./DataSet/Training/meningioma_tumor/m (5).jpg";
     # img = Image.open(img_path).convert("RGB");
     # processed_tensor = transform_pipeline(img);
 
-    img_path, tumor_type = get_random_image_path()
+    img_path, tumor_type = get_random_image_path();
     img = Image.open(img_path).convert("RGB");
     processed_tensor = transform_pipeline(img);
 
+    print(f"Image path: {img_path}");
     print(f"Selected tumor type: {tumor_type}");
     preprocessor.debug_steps();
 
