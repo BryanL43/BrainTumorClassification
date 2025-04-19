@@ -72,6 +72,7 @@ class Preprocessor:
         self.__college_np_image(clahe_img_np[:, :, ::-1], "Step 2: CLAHE (Masked)");
 
         # Step 3: Gaussian Blur (reduce noise)
+        img = Image.fromarray(clahe_img_np[:, :, ::-1]);  # BGR -> RGB
         blurred = img.filter(ImageFilter.GaussianBlur(radius=self.gauss_std_radius));
         self.__college_np_image(np.array(blurred), "Step 3: Gaussian Blurred");
 
