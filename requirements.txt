@@ -1,10 +1,11 @@
 # Core packages
 pandas
 tqdm
-matplotlib>=3.10.0
-pillow>=11.2.0
-scikit-learn>=1.6.0
-numpy>=2.2.0
+matplotlib
+pillow
+scikit-learn
+numpy
+opencv-python
 
 # Dependencies
 six>=1.17.0
