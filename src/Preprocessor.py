@@ -70,7 +70,7 @@ class Preprocessor:
 
         # Step 4: Laplacian Edge Detection
         laplacian = np.zeros_like(deblurred, dtype=np.float32);
-        for i in range(3):  # R, G, B channels
+        for i in range(3):  # Apply laplacian filter to R, G, B channels
             lap = cv2.Laplacian((deblurred[:, :, i] * 255).astype(np.uint8), cv2.CV_32F, ksize=self.laplacian_ksize);
             lap = np.abs(lap); # Drop negative values caused by direction change
             lap -= lap.min(); # Shifts minimum value to 0

@@ -1,48 +1,71 @@
-from PIL import Image, ImageFilter
-import numpy as np
+from PIL import Image
 import torch
 from torchvision import transforms, datasets
-import torchvision.transforms.functional as F
-from torch.utils.data import Dataset, DataLoader
-import matplotlib.pyplot as plt
-import os
-import random
+from torch.utils.data import DataLoader
+import torch.optim as optim
+import sys
 
 from Preprocessor import Preprocessor
 from RepeatDataSet import RepeatDataSet
+from DenseCNN import DenseCNN
 
-def get_random_image_path(root_dir="./DataSet/Training"):
-    # Get all subdirectories
-    tumor_types = [d for d in os.listdir(root_dir) if os.path.isdir(os.path.join(root_dir, d))];
-    if not tumor_types:
-        raise ValueError("No tumor type folders found in the Training directory.");
+def train_model(model, dataloader, optimizer, scheduler, device, epochs=10):
+    criterion = torch.nn.CrossEntropyLoss();
+    model.train();
 
-    # Pick a random tumor type
-    selected_type = random.choice(tumor_types);
-    type_path = os.path.join(root_dir, selected_type);
+    for epoch in range(epochs):
+        total_loss, correct, total = 0, 0, 0;
 
-    # Get all image files in that tumor type folder
-    image_files = [f for f in os.listdir(type_path)];
-    if not image_files:
-        raise ValueError(f"No images found in {type_path}");
+        for images, labels in dataloader:
+            images, labels = images.to(device), labels.to(device);
 
-    # Pick a random image
-    selected_image = random.choice(image_files);
+            # Forward pass
+            outputs = model(images);
+            loss = criterion(outputs, labels);
 
-    # Full image path
-    return os.path.join(type_path, selected_image), selected_type;
+            # Backpropagation
+            optimizer.zero_grad();
+            loss.backward();
+            optimizer.step();
 
-# Denormalize the image for final output [TEMP]
-def denormalize(tensor):
-    mean = torch.tensor([0.485, 0.456, 0.406]).view(3, 1, 1);
-    std = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1);
-    return tensor * std + mean;
+            # Collect statistics
+            total_loss += loss.item();
+            _, predicted = torch.max(outputs, 1);
+            correct += (predicted == labels).sum().item();
+            total += labels.size(0);
+
+        # Prompt scheduler at the end of each epoch
+        scheduler.step(epoch);
+
+        acc = 100.0 * correct / total;
+        current_lr = optimizer.param_groups[0]['lr'];
+        print(f"Epoch [{epoch+1}/{epochs}] - Loss: {total_loss:.4f}, Accuracy: {acc:.2f}%, LR: {current_lr:.6f}");
+
+    # TO DO: VALIDATION LOOP & EARLY STOPPING
 
 def main():
-    # Instantiate Preprocessor with specified parameters
-    preprocessor = Preprocessor();
+    device = (
+        torch.device("cuda") if torch.cuda.is_available() else
+        torch.device("mps") if torch.backends.mps.is_available() else
+        torch.device("cpu")
+    );
 
-    # Image processing pipeline
+    # Additional for local setup
+    if torch.cuda.is_available():
+        torch.cuda.set_per_process_memory_fraction(0.9, 0);
+
+    print("Using device:", device);
+
+    # Hyperparameters for training
+    root = "./DataSet/Training";
+    model_path = "./model/DenseCNN_Brain_Tumor.pth";
+    batch_size = 64;
+    num_workers = 12;
+    scheduler_T_0 = 3;
+    scheduler_T_mult = 1;
+    learning_rate = 0.0001;
+    num_epochs = 10; # 20 for full training
+
     transform_pipeline = transforms.Compose([
         transforms.Resize((224, 224)),
         transforms.RandomRotation(degrees=15), # random rotation
@@ -51,7 +74,7 @@ def main():
             translate=(0.1, 0.1), # width & height shift (10%)
             scale=(0.7, 1.3) # zoom range (70% to 130%)
         ),
-        preprocessor,
+        Preprocessor(),
         transforms.ToTensor(),
         transforms.Normalize(
             mean=[0.485, 0.456, 0.406], # ImageNet mean
@@ -59,28 +82,39 @@ def main():
         )
     ]);
 
-    base_train_dataset = datasets.ImageFolder(root="./DataSet/Training", transform=transform_pipeline);
+    # Load and augment the dataset 21 times to minimize overfitting
+    base_train_dataset = datasets.ImageFolder(root=root, transform=transform_pipeline);
+    print(base_train_dataset.class_to_idx); # ImageFolder internally maps labels already
     augmented_train_dataset = RepeatDataSet(base_train_dataset, 21);
 
-    print(len(base_train_dataset));
-    print(len(augmented_train_dataset));
+    print("Base dataset size:", len(base_train_dataset));
+    print("Augmented dataset size:", len(augmented_train_dataset));
 
-    # img_path = "./DataSet/Training/meningioma_tumor/m (5).jpg";
-    # img = Image.open(img_path).convert("RGB");
-    # processed_tensor = transform_pipeline(img);
+    train_loader = DataLoader(
+        augmented_train_dataset,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=num_workers,
+        pin_memory=True
+    );
+    
+    model = DenseCNN(num_classes=4).to(device);
+    optimizer = optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=0.01);
 
-    # img_path, tumor_type = get_random_image_path();
-    # img = Image.open(img_path).convert("RGB");
-    # processed_tensor = transform_pipeline(img);
+    # CosineAnnealingWarmRestarts for model to explore more
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
+        optimizer,
+        T_0=scheduler_T_0, # First restart happens after 3 epochs
+        T_mult=scheduler_T_mult, # Restart occurs after each T_0 * T_mult epochs
+        eta_min=1e-6 # Min learning rate
+    );
 
-    # preprocessor.debug_steps(title="Selected tumor type: " + tumor_type + "\nImage path: " + img_path);
+    train_model(model, train_loader, optimizer, scheduler, device, epochs=num_epochs);
 
-    # img = denormalize(processed_tensor).permute(1, 2, 0).numpy().clip(0, 1);
-    # plt.figure(figsize=(4, 4));
-    # plt.imshow(img);
-    # plt.title("Final preprocessed image");
-    # plt.axis('off');
-    # plt.show();
+    # Save trained model
+    torch.save(model.state_dict(), model_path);
+    print(f"Model saved to {model_path}");
+
 
 if __name__ == "__main__":
     main();

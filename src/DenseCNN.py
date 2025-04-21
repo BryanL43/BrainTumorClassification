@@ -1,15 +1,16 @@
 import torch.nn as nn
-import torchvision.models as models
+from torchvision.models import efficientnet_b0, EfficientNet_B0_Weights
 
 class DenseCNN(nn.Module):
     def __init__(self, num_classes=4):
         super(DenseCNN, self).__init__();
 
-        # Load pre-trained EfficientNetB0
-        self.base_model = models.efficientnet_b0(pretrained=True);
+        # Load pre-trained EfficientNetB0 with default weights (pretrained)
+        weights = EfficientNet_B0_Weights.DEFAULT;
+        efficientnet = efficientnet_b0(weights=weights);
 
-        # Override the classifier layer (remove original classifier for our custom head)
-        self.base_model.classifier = nn.Identity();
+        # Use only the feature extractor
+        self.features = efficientnet.features;
 
         # Custom dense classifier
         self.classifier = nn.Sequential(
@@ -36,12 +37,11 @@ class DenseCNN(nn.Module):
             nn.Linear(360, 180),
             nn.ReLU(),
 
-            # Dense layer with softmax for output layer
-            nn.Linear(180, num_classes),
-            nn.Softmax(dim=1) # Final class probability distribution
+            # Dense output layer
+            nn.Linear(180, num_classes)
         );
 
     def forward(self, x):
-        x = self.base_model(x).features(x);
-        x = self.classifier(x);
-        return x;
+        logits = self.features(x);
+        logits = self.classifier(logits);
+        return logits;
