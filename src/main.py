@@ -6,7 +6,7 @@ from torch.amp import GradScaler, autocast
 import torch.optim as optim
 import matplotlib.pyplot as plt
 import numpy as np
-
+import os
 
 import sys
 
@@ -211,8 +211,11 @@ def main():
     train_model(model, train_loader, val_loader, optimizer, scheduler, device, epochs=num_epochs, patience=3);
 
     # Save trained model
-    torch.save(model.state_dict(), model_path);
-    print(f"Model saved to {model_path}");
+    best_checkpoint = torch.load('best_model.pth')
+    torch.save(best_checkpoint['model_state_dict'], model_path)
+    print(f"Best model saved to {model_path} (Val Acc: {best_checkpoint['acc']:.2f}%)")
+    
+    os.remove('best_model.pth')
 
 
 if __name__ == "__main__":
