@@ -67,6 +67,7 @@ def train_model(
             for images, labels in val_loader:
                 images, labels = images.to(device), labels.to(device);
 
+                # Foward pass
                 outputs = model(images);
                 loss = criterion(outputs, labels);
                 
@@ -200,7 +201,7 @@ def main():
 
     idx_to_class = {v: k for k, v in base_train_dataset.class_to_idx.items()};
     label = idx_to_class[label];
-    plt.suptitle(f"21 Augmented Views of Image #{base_idx} (Class: {label})", fontsize=14);
+    plt.suptitle(f"21 Augmented Views of Image #{base_idx} (Class: {label})");
     plt.tight_layout();
     plt.show();
     # ================ DEBUG: Visualize Augmented Images ================
