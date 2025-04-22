@@ -32,6 +32,15 @@ def train_model(
     criterion = torch.nn.CrossEntropyLoss();
     best_val_acc = 0;
     patience_counter = 0;
+    
+       # Initialize history dictionary
+    history = {
+        'train_loss': [],
+        'train_acc': [],
+        'val_loss': [],
+        'val_acc': [],
+        'lr_history': []
+    }
 
     for epoch in range(epochs):
         model.train();
@@ -67,7 +76,6 @@ def train_model(
             for images, labels in val_loader:
                 images, labels = images.to(device), labels.to(device);
 
-                # Foward pass
                 outputs = model(images);
                 loss = criterion(outputs, labels);
                 
@@ -86,6 +94,13 @@ def train_model(
         train_acc = 100 * correct / total;
         val_loss /= len(val_loader);
         val_acc = 100 * val_correct / val_total;
+        
+        # Update history
+        history['train_loss'].append(total_loss)
+        history['train_acc'].append(train_acc)
+        history['val_loss'].append(val_loss)
+        history['val_acc'].append(val_acc)
+        history['lr_history'].append(optimizer.param_groups[0]['lr'])
 
         # Scheduler step after each epoch
         if isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
@@ -107,7 +122,8 @@ def train_model(
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'loss': val_loss,
-                'acc': val_acc
+                'acc': val_acc,
+                'history': history
             }, model_path);
         else:
             patience_counter += 1;
@@ -171,7 +187,7 @@ def main():
     # Load and augment the training dataset 21 times to minimize overfitting
     base_train_dataset = datasets.ImageFolder(root=training_root, transform=train_transform_pipeline);
     print(base_train_dataset.class_to_idx); # ImageFolder internally maps labels already
-    augmented_train_dataset = RepeatDataSet(base_train_dataset, 21);
+    augmented_train_dataset = RepeatDataSet(base_train_dataset, 1);
 
     print("Base dataset size:", len(base_train_dataset));
     print("Augmented dataset size:", len(augmented_train_dataset));
@@ -201,7 +217,7 @@ def main():
 
     idx_to_class = {v: k for k, v in base_train_dataset.class_to_idx.items()};
     label = idx_to_class[label];
-    plt.suptitle(f"21 Augmented Views of Image #{base_idx} (Class: {label})");
+    plt.suptitle(f"21 Augmented Views of Image #{base_idx} (Class: {label})", fontsize=14);
     plt.tight_layout();
     plt.show();
     # ================ DEBUG: Visualize Augmented Images ================
