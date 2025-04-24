@@ -56,7 +56,7 @@ def main():
     test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False);
 
     class_names = test_dataset.classes;
-    model = load_model("./model/partial_model_test.pth", num_classes=len(class_names), device=device);
+    model = load_model("./model/new_new_model_test.pth", num_classes=len(class_names), device=device);
 
     evaluate_on_test_set(model, test_loader, device);
 

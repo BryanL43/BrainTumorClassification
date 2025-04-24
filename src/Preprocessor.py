@@ -79,9 +79,6 @@ class Preprocessor:
             laplacian[:, :, i] = lap;
         
         # INT operator (sigmoid variant); boost edges a tad bit; values are already fine-tuned
-        contrast = 9.5;
-        midpoint = 0.3;
-        laplacian = 1 / (1 + np.exp(-contrast * (laplacian - midpoint)));
         laplacian = np.clip(laplacian, 0, 1); # Clamp values between 0 and 1
 
         self.__collect_np_image((laplacian * 255).astype(np.uint8), "Step 4: Laplacian Edge Detection");

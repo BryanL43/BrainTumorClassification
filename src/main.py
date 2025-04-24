@@ -141,8 +141,7 @@ def main():
     # Hyperparameters for training
     training_root = "./DataSet/Training";
     validation_root = "./DataSet/Testing";
-    # model_path = "./model/DenseCNN_Brain_Tumor.pth";
-    model_path = "./model/partial_model_test.pth";
+    model_path = "./model/DenseCNN_Brain_Tumor.pth";
     batch_size = 64;
     num_workers = 12;
     scheduler_T_0 = 3;
