@@ -128,12 +128,12 @@ def main():
     ]);
 
     # Load test set using ImageFolder
-    test_root = "./DataSet/Testing";
+    test_root = "./DataSet/Test";
     test_dataset = datasets.ImageFolder(root=test_root, transform=transform_pipeline);
     test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False);
 
     class_names = test_dataset.classes;
-    model, history = load_model("./model/partial_model_test.pth", num_classes=len(class_names), device=device);
+    model, history = load_model("./model/DenseCNN_Brain_Tumor.pth", num_classes=len(class_names), device=device);
 
     evaluate_on_test_set(model, test_loader, device);
     loss_fn = torch.nn.CrossEntropyLoss()
