@@ -156,7 +156,7 @@ def main():
 
     # Hyperparameters for training
     training_root = "./DataSet/Training";
-    validation_root = "./DataSet/Testing";
+    validation_root = "./DataSet/Validation";
     model_path = "./model/DenseCNN_Brain_Tumor.pth";
     batch_size = 64;
     num_workers = 12;
@@ -186,10 +186,8 @@ def main():
     # Load and augment the training dataset 21 times to minimize overfitting
     base_train_dataset = datasets.ImageFolder(root=training_root, transform=train_transform_pipeline);
     print(base_train_dataset.class_to_idx); # ImageFolder internally maps labels already
-    augmented_train_dataset = RepeatDataSet(base_train_dataset, 1);
 
     print("Base dataset size:", len(base_train_dataset));
-    print("Augmented dataset size:", len(augmented_train_dataset));
 
     # ================ DEBUG: Visualize Augmented Images ================
     # Pick a random base index from the original dataset
@@ -201,7 +199,7 @@ def main():
         repeated_idx = base_idx + i * len(base_train_dataset);
         
         # Fetch the transformed image
-        image_tensor, label = augmented_train_dataset[repeated_idx];
+        image_tensor, label = base_train_dataset[repeated_idx];
 
         # Denormalize the tensor image
         image = image_tensor.clone().detach();
@@ -238,7 +236,7 @@ def main():
     
     # Load datasets into DataLoaders
     train_loader = DataLoader(
-        dataset=augmented_train_dataset,
+        dataset=base_train_dataset,
         batch_size=batch_size,
         shuffle=True,
         num_workers=num_workers,
