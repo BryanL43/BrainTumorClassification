@@ -6,6 +6,7 @@ pillow
 scikit-learn
 numpy
 opencv-python
+seaborn
 
 # Dependencies
 six>=1.17.0
