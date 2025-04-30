@@ -29,6 +29,21 @@ class Inference:
         self.device = device;
 
     def evaluate(self, test_loader: DataLoader, criterion: any) -> tuple[list[float], list[float]]:
+        """
+            Evaluate the model on the test (unseen) set.
+        
+            Parameters
+            ----------
+            test_loader : DataLoader
+                The test data loader object
+            criterion : any
+                Loss function
+
+            Returns
+            -------
+            tuple[list[float], list[float]]
+                y_true, y_pred
+        """
         test_loss, correct, total = 0, 0, 0;
         y_true, y_pred = [], [];
 
@@ -60,6 +75,18 @@ class Inference:
         return y_true, y_pred;
 
     def generate_confusion_matrix(self, class_names: list[str], y_true: list[float], y_pred: list[float]) -> None:
+        """
+            Generate confusion matrix and classification report.
+        
+            Parameters
+            ----------
+            class_names : list[str]
+                List of class names
+            y_true : list[float]
+                True labels
+            y_pred : list[float]
+                Predicted labels
+        """
         cm = confusion_matrix(y_true, y_pred);
 
         # Plot confusion matrix
@@ -84,7 +111,7 @@ class Inference:
         print(report)
 
     def create_loss_curves(self):
-        # Plot train and validation loss curves
+        """ Plot train and validation loss curves. """
         plt.figure();
         plt.plot(self.history['train_loss'], label='Train Loss');
         plt.plot(self.history['val_loss'], label='Val Loss');

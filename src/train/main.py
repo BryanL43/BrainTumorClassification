@@ -20,8 +20,34 @@ def train_model(
     scheduler: any, 
     device: torch.device, 
     model_path: str, 
+    history_path: str,
     epochs: int = 10, 
 ):
+    """
+        Train the model for a given number of epochs. 
+        Save the best model as checkpoints and training history. 
+
+        Parameters
+        ----------
+        model : any
+            The model to be trained
+        data_loader : DataLoader
+            The training data loader object
+        val_loader : DataLoader
+            The validation data loader object
+        optimizer : any
+            The optimizer object, i.e. AdamW
+        scheduler : any
+            The scheduler object, i.e. CosineAnnealingWarmRestarts
+        device : torch.device
+            The device to be used for training
+        model_path : str
+            The path to save the best model checkpoint
+        history_path : str
+            The path to save the training history
+        epochs : int, optional
+            The number of epochs to train the model, by default 10
+    """
     criterion = torch.nn.CrossEntropyLoss();
     best_val_acc = 0.0;
     best_epoch = -1;
@@ -126,7 +152,6 @@ def train_model(
         );
     
     # Final save of full history
-    history_path = model_path.replace('.pth', '_history.pth')
     torch.save({
         'best_epoch': best_epoch,
         'best_val_acc': best_val_acc,
@@ -150,6 +175,7 @@ def main():
     training_root = "./DataSet/Training";
     validation_root = "./DataSet/Validation";
     model_path = "./model/DenseCNN_Brain_Tumor.pth";
+    history_path = "./model/DenseCNN_Brain_Tumor_history.pth";
     batch_size = 64;
     num_workers = 12;
     scheduler_T_0 = 3;
@@ -217,7 +243,7 @@ def main():
         eta_min=1e-6 # Min learning rate
     );
 
-    train_model(model, train_loader, val_loader, optimizer, scheduler, device, model_path, epochs=num_epochs);
+    train_model(model, train_loader, val_loader, optimizer, scheduler, device, model_path, history_path, epochs=num_epochs);
     
     if torch.cuda.is_available():
         torch.cuda.empty_cache();
