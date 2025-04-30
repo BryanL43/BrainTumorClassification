@@ -11,15 +11,19 @@ class Inference:
         self, 
         model: DenseCNN, 
         model_path: str,
+        history_path: str,
         test_loader: DataLoader,
         device: torch.device
     ):
-        # Load model in evaluate mode & acquire history
+        # Load the best model checkpoint in evaluate mode
         self.model = model.to(device);
-        checkpoint = torch.load(model_path, map_location=device);
-        self.model.load_state_dict(checkpoint["model_state_dict"]);
+        model_checkpoint = torch.load(model_path, map_location=device);
+        self.model.load_state_dict(model_checkpoint["model_state_dict"]);
         self.model.eval();
-        self.history = checkpoint.get("history", None);
+
+        # Load the training history
+        history_checkpoint = torch.load(history_path, map_location=device);
+        self.history = history_checkpoint["history"];
 
         self.test_loader = test_loader;
         self.device = device;

@@ -21,6 +21,7 @@ def main():
 
     # Parameters for Inference
     model_path = "./model/DenseCNN_Brain_Tumor.pth";
+    history_path = "./model/DenseCNN_Brain_Tumor_history.pth";
     test_root = "./DataSet/Test";
     batch_size = 64;
     num_workers = 12;
@@ -52,6 +53,7 @@ def main():
     inference = Inference(
         DenseCNN(num_classes=len(test_dataset.classes)), 
         model_path,
+        history_path,
         test_loader,
         device
     );

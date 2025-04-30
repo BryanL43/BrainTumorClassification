@@ -21,11 +21,10 @@ def train_model(
     device: torch.device, 
     model_path: str, 
     epochs: int = 10, 
-    patience: int = 3
 ):
     criterion = torch.nn.CrossEntropyLoss();
-    best_val_acc = 0;
-    patience_counter = 0;
+    best_val_acc = 0.0;
+    best_epoch = -1;
     
     # Initialize history dictionary
     history = {
@@ -101,41 +100,38 @@ def train_model(
             scheduler.step(val_loss);
         else:
             scheduler.step();
-
-        # Early stopping and checkpoint
+        
+        # Save best model weights
         if val_acc > best_val_acc:
             best_val_acc = val_acc;
-            patience_counter = 0;
-
+            best_epoch = epoch;
+            
             # Ensure save directory exists
             os.makedirs(os.path.dirname(model_path), exist_ok=True);
 
-            # Save best model
+            print(f"Saving new best model at epoch {epoch}...");
             torch.save({
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
                 'optimizer_state_dict': optimizer.state_dict(),
                 'loss': val_loss,
-                'acc': val_acc,
-                'history': history
+                'acc': val_acc
             }, model_path);
-        else:
-            patience_counter += 1;
-            if patience_counter >= patience:
-                print(f"Early stopping at epoch {epoch+1}");
-                break;
 
         print(
-            f'Epoch: {epoch+1} | '
+            f'Epoch: {epoch} | '
             f'Train Loss: {total_loss:.4f} | Train Acc: {train_acc:.2f}% | '
             f'Val Loss: {val_loss:.4f} | Val Acc: {val_acc:.2f}% | '
             f'LR: {optimizer.param_groups[0]["lr"]:.2e}'
         );
-
-    # Load best model
-    checkpoint = torch.load(model_path);
-    model.load_state_dict(checkpoint['model_state_dict']);
-    return model;
+    
+    # Final save of full history
+    history_path = model_path.replace('.pth', '_history.pth')
+    torch.save({
+        'best_epoch': best_epoch,
+        'best_val_acc': best_val_acc,
+        'history': history
+    }, history_path);
 
 def main():
     device = (
@@ -157,10 +153,9 @@ def main():
     batch_size = 64;
     num_workers = 12;
     scheduler_T_0 = 3;
-    scheduler_T_mult = 1;
+    scheduler_T_mult = 2;
     learning_rate = 0.0001;
-    num_epochs = 50; # 20 for full training
-    num_patience = 3;
+    num_epochs = 20; # 20 for full training
 
     # Training image processing pipeline
     train_transform_pipeline = transforms.Compose([
@@ -222,7 +217,7 @@ def main():
         eta_min=1e-6 # Min learning rate
     );
 
-    train_model(model, train_loader, val_loader, optimizer, scheduler, device, model_path, epochs=num_epochs, patience=num_patience);
+    train_model(model, train_loader, val_loader, optimizer, scheduler, device, model_path, epochs=num_epochs);
     
     if torch.cuda.is_available():
         torch.cuda.empty_cache();

@@ -14,14 +14,18 @@ def main():
 
     # Parameters for Plotting
     model_path = "./model/DenseCNN_Brain_Tumor.pth";
+    history_path = "./model/DenseCNN_Brain_Tumor_history.pth";
     test_root = "./DataSet/Test";
 
-    # Load the model & its stored history
+    # Load the best model checkpoint in evaluate mode
     model = DenseCNN(num_classes=len(datasets.ImageFolder(root=test_root).classes)).to(device);
-    checkpoint = torch.load(model_path, map_location=device);
-    model.load_state_dict(checkpoint["model_state_dict"]);
+    model_checkpoint = torch.load(model_path, map_location=device);
+    model.load_state_dict(model_checkpoint["model_state_dict"]);
     model.eval();
-    history = checkpoint.get("history", None);
+
+    # Load the training history
+    history_checkpoint = torch.load(history_path, map_location=device);
+    history = history_checkpoint["history"];
 
     # Denormalize history
     epochs = np.arange(len(history['train_loss']));
