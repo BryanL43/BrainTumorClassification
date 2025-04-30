@@ -18,7 +18,7 @@ python -m venv venv
 source venv/bin/activate # On Windows use `venv\Scripts\activate`
 ```
 
-2. **Install dependencies:**
+3. **Install dependencies:**
 ```sh
 pip install -r requirements.txt
 ```
@@ -43,7 +43,7 @@ Build cuda_12.6.r12.6/compiler.34431801_0
 
 
 ## Usage
-Ensure you are in the project's root directory.
+Ensure that your current working directory is set to the project's root directory in the terminal of your choice.
 
 ### Training
 ```sh
