@@ -6,7 +6,7 @@ def split_dataset(source_dir="DataSet/Testing"):
     src = Path(source_dir)
     val = src.parent/"Validation"
     test = src.parent/"Test"
-    
+
     # Create target folders
     val.mkdir(exist_ok=True)
     test.mkdir(exist_ok=True)
@@ -27,6 +27,7 @@ def split_dataset(source_dir="DataSet/Testing"):
         for i, f in enumerate(files):
             dest = val if i < mid else test
             shutil.move(str(f), str(dest/class_dir.name/f.name))
+
 
 if __name__ == "__main__":
     split_dataset()
