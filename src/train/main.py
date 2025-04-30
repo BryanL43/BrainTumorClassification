@@ -5,8 +5,8 @@ import torch.optim as optim
 import os
 import sys
 
-from Preprocessor import Preprocessor
-from Model import DenseCNN
+from src.train.Preprocessor import Preprocessor
+from src.train.Model import DenseCNN
 
 import torch
 import os
