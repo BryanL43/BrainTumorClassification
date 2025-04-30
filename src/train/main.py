@@ -6,7 +6,7 @@ import os
 import sys
 
 from Preprocessor import Preprocessor
-from DenseCNN import DenseCNN
+from Model import DenseCNN
 
 import torch
 import os
@@ -159,7 +159,7 @@ def main():
     scheduler_T_0 = 3;
     scheduler_T_mult = 1;
     learning_rate = 0.0001;
-    num_epochs = 10; # 20 for full training
+    num_epochs = 50; # 20 for full training
     num_patience = 3;
 
     # Training image processing pipeline

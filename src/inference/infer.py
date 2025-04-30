@@ -2,9 +2,9 @@ import torch
 from torchvision import transforms, datasets
 from torch.utils.data import DataLoader
 
-from src.Preprocessor import Preprocessor
-from src.DenseCNN import DenseCNN
-from tests.Inference import Inference
+from src.train.Preprocessor import Preprocessor
+from src.train.Model import DenseCNN
+from src.inference.Inference import Inference
 
 def main():
     device = (

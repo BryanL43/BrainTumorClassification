@@ -1,4 +1,5 @@
 import torch.nn as nn
+import torch.nn.functional as F
 from torchvision.models import efficientnet_b0, EfficientNet_B0_Weights
 
 class DenseCNN(nn.Module):
@@ -20,22 +21,22 @@ class DenseCNN(nn.Module):
 
             # First dense layer with dropout
             nn.Linear(1280, 720), # efficientnet_b0 has 1280 features
-            nn.ReLU(),
+            nn.LeakyReLU(negative_slope=0.01),
             nn.Dropout(p=0.25),
 
             # Second dense layer with dropout
             nn.Linear(720, 360),
-            nn.ReLU(),
+            nn.LeakyReLU(negative_slope=0.01),
             nn.Dropout(p=0.25),
 
             # Third dense layer with dropout
             nn.Linear(360, 360),
-            nn.ReLU(),
+            nn.LeakyReLU(negative_slope=0.01),
             nn.Dropout(p=0.5),
 
             # Final dense layer without dropout
             nn.Linear(360, 180),
-            nn.ReLU(),
+            nn.LeakyReLU(negative_slope=0.01),
 
             # Dense output layer
             nn.Linear(180, num_classes)

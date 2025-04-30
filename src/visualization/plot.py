@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from torchvision import datasets
 
-from src.DenseCNN import DenseCNN
+from src.train.Model import DenseCNN
 
 def main():
     device = (

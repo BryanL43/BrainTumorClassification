@@ -4,7 +4,7 @@ from sklearn.metrics import confusion_matrix, classification_report
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from src.DenseCNN import DenseCNN
+from src.train.Model import DenseCNN
 
 class Inference:
     def __init__(
