@@ -21,21 +21,25 @@ class DenseCNN(nn.Module):
 
             # First dense layer with dropout
             nn.Linear(1280, 720), # efficientnet_b0 has 1280 features
+            nn.BatchNorm1d(720),
             nn.LeakyReLU(negative_slope=0.01),
             nn.Dropout(p=0.25),
 
             # Second dense layer with dropout
             nn.Linear(720, 360),
+            nn.BatchNorm1d(360),
             nn.LeakyReLU(negative_slope=0.01),
             nn.Dropout(p=0.25),
 
             # Third dense layer with dropout
             nn.Linear(360, 360),
+            nn.BatchNorm1d(360),
             nn.LeakyReLU(negative_slope=0.01),
             nn.Dropout(p=0.5),
 
             # Final dense layer without dropout
             nn.Linear(360, 180),
+            nn.BatchNorm1d(180),
             nn.LeakyReLU(negative_slope=0.01),
 
             # Dense output layer
